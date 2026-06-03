@@ -26,5 +26,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health).*)"],
+  matcher: [
+    /*
+     * Не трогаем статику из /public (картинки, шрифты и т.д.) —
+     * иначе auth-bg.jpg редиректится на /login и фон не грузится.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$).*)",
+  ],
 };

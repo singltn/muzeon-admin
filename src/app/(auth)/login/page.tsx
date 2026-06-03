@@ -1,5 +1,9 @@
 import { LoginForm } from "@/features/auth/login/ui/login-form";
 
+export const metadata = {
+  title: "Вход — Muzeon Admin",
+};
+
 export default function LoginPage() {
   return <LoginForm />;
 }

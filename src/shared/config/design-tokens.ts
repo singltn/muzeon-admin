@@ -4,6 +4,8 @@
  */
 export const designTokens = {
   colors: {
+    /** Кнопки на экранах login / 2FA */
+    authPrimary: "#0D2350",
     primary: "#3B82F6",
     secondary: "#F4F4F5",
     success: "#10B981",

@@ -1,4 +1,4 @@
-# Design System — Музейная платформа монетизации v1.0
+# Design System
 
 Документ синхронизирован с UI Kit проекта. Реализация: **shadcn/ui**, **Tailwind CSS v4**, **Lucide Icons**.
 
@@ -60,6 +60,17 @@
 
 - `widgets/stat-card` + `widgets/dashboard-overview`
 - Иконки Lucide: Ticket, Wallet, Users, BarChart3
+
+## Auth-экраны
+
+- Фон: `src/assets/auth-bg.png` (интерьер музея) + лёгкий градиент для контраста
+- Карточка: **liquid glass** — `backdrop-blur-2xl`, `bg-white/45`, градиентная кромка
+- Типографика на auth: `stone-900` / `stone-600` (светлый фон)
+- OTP: вариант `variant="glass"` у `OtpInput`
+- Бренд: **МУЗЕОН** (без иконки-билетика)
+- Оболочка: `widgets/auth-screen` — `min-h-[100dvh]`, safe-area insets, max-width 400px
+- Логин: email + пароль (toggle видимости), валидация on blur
+- 2FA: 6 ячеек OTP (`shared/ui/otp-input`), paste, auto-submit, resend 60s, маска email
 
 ## Иконки (Lucide)
 

@@ -6,4 +6,9 @@ export const verify2faApi = {
       method: "POST",
       body,
     }),
+  resend: (body: { challengeId: string }) =>
+    httpClient<{ status: "sent" }>("/auth/2fa/resend", {
+      method: "POST",
+      body,
+    }),
 };
