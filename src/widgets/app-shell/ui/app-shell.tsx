@@ -11,14 +11,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar collapsed={collapsed} />
+
+      {/* Content — desktop offset, mobile full width */}
       <div
         className={cn(
           "flex flex-1 flex-col transition-all duration-200",
-          collapsed ? "ml-16" : "ml-60",
+          "lg:ml-60",
+          collapsed && "lg:ml-16",
         )}
       >
         <Header />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

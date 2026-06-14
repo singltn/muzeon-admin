@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Trash2, CalendarDays, Pencil } from "lucide-react";
 import { DataTable, PAGE_SIZE } from "@/widgets/data-table/ui/data-table";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -33,6 +33,14 @@ import type { Event, EventStatus } from "@/entities/event/model/types";
 import { EVENT_STATUS_TRANSITIONS } from "@/entities/event/model/types";
 import { toastApiError, toastSuccess } from "@/shared/lib/toast";
 import { Textarea } from "@/shared/ui/textarea";
+import { formatDatetime, toDatetimeLocal } from "@/shared/lib/format-date";
+
+const statusLabels: Record<EventStatus, string> = {
+  draft: "Черновик",
+  published: "Опубликовано",
+  archived: "Архив",
+  canceled: "Отменено",
+};
 
 export function MuseumEventsTab({
   museumId,
@@ -43,25 +51,33 @@ export function MuseumEventsTab({
 }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  const [formOpen, setFormOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Event | null>(null);
   const [deleteItem, setDeleteItem] = useState<Event | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: eventQueryKeys.list(museumId, { offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
-    queryFn: () =>
-      eventApi.list(museumId, { offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
+    queryFn: () => eventApi.list(museumId, { offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
   });
 
   const createMutation = useMutation({
     mutationFn: (body: EventCreateFormData) =>
-      eventApi.create(museumId, {
-        ...body,
-        date_end: body.date_end ?? null,
-      }),
+      eventApi.create(museumId, { ...body, date_end: body.date_end ?? null }),
     onSuccess: () => {
       toastSuccess("Событие создано");
       queryClient.invalidateQueries({ queryKey: eventQueryKeys.all });
-      setFormOpen(false);
+      setCreateOpen(false);
+    },
+    onError: toastApiError,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: EventCreateFormData }) =>
+      eventApi.update(museumId, id, { ...body, date_end: body.date_end ?? null }),
+    onSuccess: () => {
+      toastSuccess("Событие обновлено");
+      queryClient.invalidateQueries({ queryKey: eventQueryKeys.all });
+      setEditItem(null);
     },
     onError: toastApiError,
   });
@@ -95,8 +111,11 @@ export function MuseumEventsTab({
     {
       accessorKey: "date_start",
       header: "Дата",
-      cell: (info) =>
-        new Date(String(info.getValue())).toLocaleString("ru", { dateStyle: "short", timeStyle: "short" }),
+      cell: (info) => (
+        <span className="whitespace-nowrap text-sm">
+          {formatDatetime(String(info.getValue()))}
+        </span>
+      ),
     },
     {
       accessorKey: "status",
@@ -112,10 +131,7 @@ export function MuseumEventsTab({
             defaultValue={status}
             className="rounded border border-input bg-background px-2 py-1 text-xs"
             onChange={(e) =>
-              statusMutation.mutate({
-                id: row.original.id,
-                status: e.target.value as EventStatus,
-              })
+              statusMutation.mutate({ id: row.original.id, status: e.target.value as EventStatus })
             }
           >
             <option value={status}>{statusLabels[status]}</option>
@@ -132,9 +148,14 @@ export function MuseumEventsTab({
             id: "actions",
             header: "",
             cell: ({ row }: { row: { original: Event } }) => (
-              <Button variant="ghost" size="sm" onClick={() => setDeleteItem(row.original)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="sm" onClick={() => setEditItem(row.original)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setDeleteItem(row.original)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             ),
           } as ColumnDef<Event, unknown>,
         ]
@@ -145,7 +166,7 @@ export function MuseumEventsTab({
     <div>
       {canManage && (
         <div className="mb-4 flex justify-end">
-          <Button onClick={() => setFormOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Создать событие
           </Button>
@@ -159,7 +180,7 @@ export function MuseumEventsTab({
           description={canManage ? "Создайте первое событие" : undefined}
           action={
             canManage ? (
-              <Button onClick={() => setFormOpen(true)}>Создать</Button>
+              <Button onClick={() => setCreateOpen(true)}>Создать</Button>
             ) : undefined
           }
         />
@@ -174,13 +195,24 @@ export function MuseumEventsTab({
         />
       )}
 
-      {formOpen && (
+      {/* Create modal */}
+      <EventFormModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        museumId={museumId}
+        onSubmit={createMutation.mutate}
+        isPending={createMutation.isPending}
+      />
+
+      {/* Edit modal */}
+      {editItem && (
         <EventFormModal
-          open={formOpen}
-          onOpenChange={setFormOpen}
+          open
+          onOpenChange={(v) => !v && setEditItem(null)}
           museumId={museumId}
-          onSubmit={createMutation.mutate}
-          isPending={createMutation.isPending}
+          initialData={editItem}
+          onSubmit={(body) => updateMutation.mutate({ id: editItem.id, body })}
+          isPending={updateMutation.isPending}
         />
       )}
 
@@ -196,23 +228,18 @@ export function MuseumEventsTab({
   );
 }
 
-const statusLabels: Record<EventStatus, string> = {
-  draft: "Черновик",
-  published: "Опубликовано",
-  archived: "Архив",
-  canceled: "Отменено",
-};
-
 function EventFormModal({
   open,
   onOpenChange,
   museumId,
+  initialData,
   onSubmit,
   isPending,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   museumId: number;
+  initialData?: Event;
   onSubmit: (d: EventCreateFormData) => void;
   isPending: boolean;
 }) {
@@ -226,22 +253,30 @@ function EventFormModal({
     queryFn: () => locationApi.list(museumId, { limit: 100 }),
   });
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<EventCreateFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<EventCreateFormData>({
     resolver: zodResolver(eventCreateSchema),
-    defaultValues: { is_recurring: false, capacity: 0 },
+    defaultValues: initialData
+      ? {
+          title: initialData.title,
+          description: initialData.description,
+          capacity: initialData.capacity,
+          date_start: toDatetimeLocal(initialData.date_start),
+          date_end: toDatetimeLocal(initialData.date_end) || undefined,
+          type_id: initialData.type_id,
+          location_id: initialData.location_id,
+          is_recurring: initialData.is_recurring,
+        }
+      : { is_recurring: false, capacity: 0 },
   });
 
   const noLocations = (locations?.items ?? []).length === 0;
+  const isEdit = !!initialData;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Создать событие</DialogTitle>
+          <DialogTitle>{isEdit ? "Редактировать событие" : "Создать событие"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Field label="Название" error={errors.title?.message}>
@@ -253,7 +288,7 @@ function EventFormModal({
           <Field label="Вместимость" error={errors.capacity?.message}>
             <Input {...register("capacity")} type="number" min={0} aria-invalid={!!errors.capacity} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Дата начала" error={errors.date_start?.message}>
               <Input {...register("date_start")} type="datetime-local" aria-invalid={!!errors.date_start} />
             </Field>
@@ -274,9 +309,7 @@ function EventFormModal({
           </Field>
           <Field label="Площадка" error={errors.location_id?.message}>
             {noLocations ? (
-              <p className="text-sm text-muted-foreground">
-                Сначала создайте площадку во вкладке «Площадки»
-              </p>
+              <p className="text-sm text-muted-foreground">Сначала создайте площадку</p>
             ) : (
               <select
                 {...register("location_id")}
@@ -295,8 +328,8 @@ function EventFormModal({
           </div>
           <div className="flex justify-end gap-3 pt-1">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
-            <Button type="submit" disabled={isPending || noLocations}>
-              {isPending ? "Создание…" : "Создать"}
+            <Button type="submit" disabled={isPending || (!isEdit && noLocations)}>
+              {isPending ? "Сохранение…" : isEdit ? "Сохранить" : "Создать"}
             </Button>
           </div>
         </form>

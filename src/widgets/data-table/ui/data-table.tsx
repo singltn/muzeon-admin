@@ -46,22 +46,20 @@ export function DataTable<T>({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+      {/* Horizontal scroll for small screens */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[500px] text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b border-border bg-muted/40">
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="h-11 px-4 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                    className="h-11 px-4 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground whitespace-nowrap"
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
               </tr>
@@ -85,10 +83,7 @@ export function DataTable<T>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -99,7 +94,7 @@ export function DataTable<T>({
       </div>
 
       {onPageChange && totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+        <div className="flex flex-col items-start justify-between gap-2 border-t border-border px-4 py-3 sm:flex-row sm:items-center">
           <p className="text-sm text-muted-foreground">
             Страница {page + 1} из {totalPages}
             {total > 0 && ` · ${total} записей`}
