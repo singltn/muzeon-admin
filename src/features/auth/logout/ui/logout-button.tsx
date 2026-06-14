@@ -1,35 +1,41 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { logoutApi } from "../api/logout-api";
 import { sessionActions } from "@/store/slices/session-slice";
 import { useAppDispatch } from "@/store/hooks";
-import { clearSessionMarker } from "@/shared/lib/session-marker";
 
 export function LogoutButton() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const [pending, setPending] = useState(false);
 
-  const mutation = useMutation({
-    mutationFn: logoutApi.logout,
-    onSettled: () => {
-      clearSessionMarker();
-      dispatch(sessionActions.clearSession());
-      // Останавливаем все текущие запросы до очистки кэша,
-      // иначе queryClient.clear() запускает повторный fetch → гонка
-      queryClient.cancelQueries();
+  const handleLogout = async () => {
+    if (pending) return;
+    setPending(true);
+    try {
+      // Останавливаем все запросы и чистим стор ДО навигации
+      await queryClient.cancelQueries();
       queryClient.clear();
-      // Hard-navigation полностью уничтожает React-дерево (включая SessionHydrator),
-      // исключая любые гонки между router.push и рефетчем
-      window.location.replace("/login");
-    },
-  });
+      dispatch(sessionActions.clearSession());
+
+      // POST /api/auth/logout:
+      //  — вызывает бэкенд (best-effort)
+      //  — удаляет session_marker cookie на сервере
+      //  — возвращает redirect 307 → /login
+      // Переходим туда напрямую — cookie уже удалена сервером,
+      // middleware не увидит session_marker и не зациклится
+      window.location.href = "/api/auth/logout";
+    } catch {
+      setPending(false);
+    }
+  };
 
   return (
     <button
-      onClick={() => mutation.mutate()}
-      disabled={mutation.isPending}
+      onClick={handleLogout}
+      disabled={pending}
       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
     >
       <LogOut className="h-4 w-4" />

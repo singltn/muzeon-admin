@@ -2,20 +2,20 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { userApi } from "@/entities/user/api/user-api";
 import { userQueryKeys } from "@/entities/user/api/query-keys";
 import { sessionActions } from "@/store/slices/session-slice";
 import { useAppDispatch } from "@/store/hooks";
-import { clearSessionMarker } from "@/shared/lib/session-marker";
 
 export function SessionHydrator({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const { data, isError, isLoading } = useQuery({
     queryKey: userQueryKeys.me(),
     queryFn: userApi.me,
     retry: false,
-    // Не рефетчить при возврате на вкладку — лишние 401 запускали гонку при logout
     refetchOnWindowFocus: false,
   });
 
@@ -25,14 +25,14 @@ export function SessionHydrator({ children }: { children: ReactNode }) {
       return;
     }
     if (isError || !data) {
-      clearSessionMarker();
       dispatch(sessionActions.setUnauthenticated());
-      // Hard-redirect — middleware видит отсутствие session_marker и пропустит /login
-      window.location.replace("/login");
+      // Истёкшая сессия — уходим на логин через серверный route
+      // (он удалит session_marker и сделает redirect)
+      router.replace("/api/auth/logout");
       return;
     }
     dispatch(sessionActions.setAuthenticated(data));
-  }, [data, isError, isLoading, dispatch]);
+  }, [data, isError, isLoading, dispatch, router]);
 
   if (isLoading) {
     return (
@@ -42,7 +42,6 @@ export function SessionHydrator({ children }: { children: ReactNode }) {
     );
   }
 
-  // При ошибке тоже показываем спиннер пока происходит редирект
   if (isError) {
     return (
       <div className="flex min-h-screen items-center justify-center">
