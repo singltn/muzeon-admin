@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Building2,
-  Calendar,
   CalendarDays,
   MapPin,
   Settings,
@@ -65,12 +64,11 @@ function SidebarContent({ collapsed, onClose }: SidebarContentProps) {
   return (
     <>
       <div className="flex h-14 items-center justify-between gap-2 border-b border-border px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0d2350] text-white">
-            <Calendar className="h-4 w-4" />
-          </div>
+        <div className="flex items-center">
           {(!collapsed || onClose) && (
-            <span className="text-sm font-semibold tracking-wide">MUZEON</span>
+            <span className="text-base font-bold tracking-widest text-[#0d2350] uppercase">
+              Музеон
+            </span>
           )}
         </div>
         {onClose && (

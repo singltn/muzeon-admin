@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { logoutApi } from "../api/logout-api";
 import { sessionActions } from "@/store/slices/session-slice";
@@ -11,15 +10,19 @@ import { clearSessionMarker } from "@/shared/lib/session-marker";
 export function LogoutButton() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   const mutation = useMutation({
     mutationFn: logoutApi.logout,
     onSettled: () => {
       clearSessionMarker();
       dispatch(sessionActions.clearSession());
+      // Останавливаем все текущие запросы до очистки кэша,
+      // иначе queryClient.clear() запускает повторный fetch → гонка
+      queryClient.cancelQueries();
       queryClient.clear();
-      router.push("/login");
+      // Hard-navigation полностью уничтожает React-дерево (включая SessionHydrator),
+      // исключая любые гонки между router.push и рефетчем
+      window.location.replace("/login");
     },
   });
 
