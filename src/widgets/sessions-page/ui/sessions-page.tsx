@@ -2,25 +2,30 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Monitor, Smartphone, Tablet, Trash2, Bot } from "lucide-react";
+import { Monitor, Smartphone, Tablet, Trash2 } from "lucide-react";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
 import { sessionApi } from "@/entities/session/api/session-api";
+import type { Session } from "@/entities/session/model/types";
 import { toastApiError, toastSuccess } from "@/shared/lib/toast";
 import { formatDatetime } from "@/shared/lib/format-date";
-import { detectDevice, parseUserAgent } from "@/shared/lib/device-type";
 
 const SESSION_QUERY_KEY = ["sessions"];
 
-const DeviceIcon = ({ ua }: { ua: string }) => {
-  const type = detectDevice(ua);
+function DeviceIcon({ session }: { session: Session }) {
   const cls = "h-5 w-5 shrink-0 text-muted-foreground";
-  if (type === "mobile") return <Smartphone className={cls} />;
-  if (type === "tablet") return <Tablet className={cls} />;
-  if (type === "bot") return <Bot className={cls} />;
+  if (session.is_mobile) return <Smartphone className={cls} />;
+  if (session.device?.toLowerCase().includes("tablet")) return <Tablet className={cls} />;
   return <Monitor className={cls} />;
-};
+}
+
+function deviceLabel(session: Session): string {
+  const parts: string[] = [];
+  if (session.browser) parts.push(session.browser);
+  if (session.os) parts.push(session.os);
+  return parts.join(" · ") || "Неизвестное устройство";
+}
 
 export function SessionsPage() {
   const queryClient = useQueryClient();
@@ -32,7 +37,7 @@ export function SessionsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => sessionApi.remove(id),
+    mutationFn: (sessionId: string) => sessionApi.remove(sessionId),
     onSuccess: () => {
       toastSuccess("Сессия завершена");
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
@@ -62,34 +67,33 @@ export function SessionsPage() {
       <div className="max-w-2xl space-y-3">
         {sessions.map((session) => (
           <div
-            key={session.id}
-            className="flex items-start gap-4 rounded-xl border border-border bg-background px-4 py-3.5 shadow-sm"
+            key={session.session_id}
+            className="flex items-start gap-3 rounded-xl border border-border bg-background px-4 py-3.5 shadow-sm"
           >
             <div className="mt-0.5">
-              <DeviceIcon ua={session.user_agent} />
+              <DeviceIcon session={session} />
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug">
-                {parseUserAgent(session.user_agent)}
+                {deviceLabel(session)}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                {session.ip_address}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Вход: {formatDatetime(session.created_at)}
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                IP: {session.ip}
               </p>
               <p className="text-xs text-muted-foreground">
-                Активность: {formatDatetime(session.last_active_at)}
+                Вход: {formatDatetime(new Date(session.created_at * 1000).toISOString())}
               </p>
             </div>
-            <div className="shrink-0">
+
+            <div className="shrink-0 mt-0.5">
               {session.is_current ? (
                 <Badge variant="success">Текущая</Badge>
               ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(session.id)}
+                  onClick={() => deleteMutation.mutate(session.session_id)}
                   disabled={deleteMutation.isPending}
                   className="gap-1.5"
                 >

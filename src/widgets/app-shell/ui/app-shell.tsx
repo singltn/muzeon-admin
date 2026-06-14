@@ -12,16 +12,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar collapsed={collapsed} />
 
-      {/* Content — desktop offset, mobile full width */}
+      {/* On mobile: full width (no sidebar offset). On lg+: offset matches sidebar */}
       <div
         className={cn(
-          "flex flex-1 flex-col transition-all duration-200",
-          "lg:ml-60",
-          collapsed && "lg:ml-16",
+          "flex min-w-0 flex-1 flex-col",
+          collapsed ? "lg:ml-16" : "lg:ml-60",
         )}
       >
         <Header />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        {/* Prevent content from overflowing on narrow screens */}
+        <main className="flex-1 overflow-x-hidden p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

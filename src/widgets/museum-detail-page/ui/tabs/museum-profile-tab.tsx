@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +17,16 @@ import { Label } from "@/shared/ui/label";
 import { toastApiError, toastSuccess } from "@/shared/lib/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
+/** ISO datetime → "YYYY-MM-DD" для <input type="date"> */
+function toDateInput(value: string | null | undefined): string {
+  if (!value) return "";
+  // Если уже в формате YYYY-MM-DD — возвращаем как есть
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
 type Props = {
   museum: Museum;
   isSuperAdmin?: boolean;
@@ -24,25 +35,16 @@ type Props = {
 export function MuseumProfileTab({ museum, isSuperAdmin }: Props) {
   const queryClient = useQueryClient();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<MuseumUpdateFormData>({
-    resolver: zodResolver(museumUpdateAdminSchema),
-    defaultValues: {
-      name: museum.name,
-      legal_name: museum.legal_name,
-      inn: museum.inn,
-      ogrn: museum.ogrn,
-      email: museum.email,
-      phone: museum.phone,
-      address: museum.address,
-      status: museum.status,
-      subscription_plan: museum.subscription_plan,
-      subscription_end_date: museum.subscription_end_date ?? undefined,
-    },
-  });
+  const { register, handleSubmit, reset, formState: { errors } } =
+    useForm<MuseumUpdateFormData>({
+      resolver: zodResolver(museumUpdateAdminSchema),
+      defaultValues: buildDefaults(museum),
+    });
+
+  // Синхронизируем форму при обновлении данных из API
+  useEffect(() => {
+    reset(buildDefaults(museum));
+  }, [museum, reset]);
 
   const updateMutation = useMutation({
     mutationFn: (data: MuseumUpdateFormData) =>
@@ -128,6 +130,22 @@ export function MuseumProfileTab({ museum, isSuperAdmin }: Props) {
       </Card>
     </form>
   );
+}
+
+function buildDefaults(museum: Museum): MuseumUpdateFormData {
+  return {
+    name: museum.name,
+    legal_name: museum.legal_name,
+    inn: museum.inn,
+    ogrn: museum.ogrn,
+    email: museum.email,
+    phone: museum.phone,
+    address: museum.address,
+    status: museum.status,
+    subscription_plan: museum.subscription_plan,
+    // Конвертируем ISO в "YYYY-MM-DD" — единственный формат, понятный <input type="date">
+    subscription_end_date: toDateInput(museum.subscription_end_date) || undefined,
+  };
 }
 
 function Field({
