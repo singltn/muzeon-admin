@@ -2,7 +2,6 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { userApi } from "@/entities/user/api/user-api";
 import { userQueryKeys } from "@/entities/user/api/query-keys";
 import { sessionActions } from "@/store/slices/session-slice";
@@ -10,7 +9,6 @@ import { useAppDispatch } from "@/store/hooks";
 
 export function SessionHydrator({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
 
   const { data, isError, isLoading } = useQuery({
     queryKey: userQueryKeys.me(),
@@ -26,13 +24,13 @@ export function SessionHydrator({ children }: { children: ReactNode }) {
     }
     if (isError || !data) {
       dispatch(sessionActions.setUnauthenticated());
-      // Истёкшая сессия — уходим на логин через серверный route
-      // (он удалит session_marker и сделает redirect)
-      router.replace("/api/auth/logout");
+      // 401 от бэкенда — сессия истекла, уходим на логин
+      // window.location чтобы middleware пересчитал куки заново
+      window.location.replace("/login");
       return;
     }
     dispatch(sessionActions.setAuthenticated(data));
-  }, [data, isError, isLoading, dispatch, router]);
+  }, [data, isError, isLoading, dispatch]);
 
   if (isLoading) {
     return (

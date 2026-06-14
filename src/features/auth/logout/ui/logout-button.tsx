@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { sessionActions } from "@/store/slices/session-slice";
 import { useAppDispatch } from "@/store/hooks";
+import { logoutApi } from "../api/logout-api";
 
 export function LogoutButton() {
   const dispatch = useAppDispatch();
@@ -15,20 +16,18 @@ export function LogoutButton() {
     if (pending) return;
     setPending(true);
     try {
-      // Останавливаем все запросы и чистим стор ДО навигации
-      await queryClient.cancelQueries();
+      // Бэкенд сам удаляет session cookie через Set-Cookie в ответе
+      await logoutApi.logout();
+    } catch {
+      // Даже если запрос упал — всё равно уходим на логин
+    } finally {
+      // Чистим клиентский стейт
+      queryClient.cancelQueries();
       queryClient.clear();
       dispatch(sessionActions.clearSession());
-
-      // POST /api/auth/logout:
-      //  — вызывает бэкенд (best-effort)
-      //  — удаляет session_marker cookie на сервере
-      //  — возвращает redirect 307 → /login
-      // Переходим туда напрямую — cookie уже удалена сервером,
-      // middleware не увидит session_marker и не зациклится
-      window.location.href = "/api/auth/logout";
-    } catch {
-      setPending(false);
+      // Перезагрузка страницы: браузер применит Set-Cookie от бэкенда
+      // (удаление session куки) до того как загрузится /login
+      window.location.replace("/login");
     }
   };
 

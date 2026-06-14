@@ -8,7 +8,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { verify2faApi } from "../api/verify-2fa-api";
 import { authPending } from "@/features/auth/lib/auth-pending";
 import { maskEmail } from "@/shared/lib/mask-email";
-import { setSessionMarker } from "@/shared/lib/session-marker";
 import { AuthScreen } from "@/widgets/auth-screen/ui/auth-screen";
 import { OtpInput } from "@/shared/ui/otp-input";
 
@@ -34,7 +33,6 @@ export function Verify2faForm() {
       verify2faApi.verify({ email, otp }),
     onSuccess: () => {
       authPending.clear();
-      setSessionMarker();
       router.push("/");
     },
     onError: () => {
