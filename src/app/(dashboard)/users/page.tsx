@@ -1,5 +1,7 @@
 import { UsersPage } from "@/widgets/users-page/ui/users-page";
 
-export default function UsersRoutePage() {
+export const metadata = { title: "Пользователи — MUZEON Admin" };
+
+export default function Page() {
   return <UsersPage />;
 }

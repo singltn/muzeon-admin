@@ -1,15 +1,14 @@
 export type ApiErrorBody = {
+  code: string;
   message: string;
-  code?: string;
-  details?: Record<string, string[]>;
+  request_id?: string;
 };
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  meta: {
-    page: number;
-    perPage: number;
-    total: number;
-    totalPages: number;
-  };
+/** Стандартный список с пагинацией */
+export type ListResponse<T> = {
+  items: T[];
+  total: number;
 };
+
+/** Алиас для совместимости */
+export type PaginatedResponse<T> = ListResponse<T>;

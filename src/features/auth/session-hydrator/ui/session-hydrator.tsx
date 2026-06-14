@@ -2,23 +2,21 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { userApi } from "@/entities/user/api/user-api";
 import { userQueryKeys } from "@/entities/user/api/query-keys";
 import { sessionActions } from "@/store/slices/session-slice";
-import { permissionsActions } from "@/store/slices/permissions-slice";
 import { useAppDispatch } from "@/store/hooks";
-import type { Permission } from "@/shared/lib/rbac/types";
-
-type MeResponse = Awaited<ReturnType<typeof userApi.me>> & {
-  permissions?: Permission[];
-};
+import { getDefaultRoute } from "@/shared/lib/rbac/types";
+import { clearSessionMarker } from "@/shared/lib/session-marker";
 
 export function SessionHydrator({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const { data, isError, isLoading } = useQuery({
     queryKey: userQueryKeys.me(),
-    queryFn: () => userApi.me() as Promise<MeResponse>,
+    queryFn: userApi.me,
     retry: false,
   });
 
@@ -28,15 +26,34 @@ export function SessionHydrator({ children }: { children: ReactNode }) {
       return;
     }
     if (isError || !data) {
+      clearSessionMarker();
       dispatch(sessionActions.setUnauthenticated());
-      dispatch(permissionsActions.clearPermissions());
       return;
     }
     dispatch(sessionActions.setAuthenticated(data));
-    if (data.permissions) {
-      dispatch(permissionsActions.setPermissions(data.permissions));
-    }
   }, [data, isError, isLoading, dispatch]);
 
+  useEffect(() => {
+    if (isError) {
+      router.replace("/login");
+    }
+  }, [isError, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return <>{children}</>;
+}
+
+/** Хук для редиректа на default route роли */
+export function useRoleRedirect() {
+  const router = useRouter();
+  return (role: string) => {
+    router.replace(getDefaultRoute(role as Parameters<typeof getDefaultRoute>[0]));
+  };
 }

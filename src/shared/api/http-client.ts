@@ -8,27 +8,28 @@ export class ApiError extends Error {
   ) {
     super(body?.message ?? `API error ${status}`);
     this.name = "ApiError";
+    this.code = body?.code ?? String(status);
   }
+  readonly code: string;
 }
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
-  params?: Record<string, string | number | boolean | undefined>;
+  params?: Record<string, string | number | boolean | undefined | null>;
 };
 
 function buildUrl(path: string, params?: RequestOptions["params"]) {
-  const url = new URL(path, env.client.NEXT_PUBLIC_API_BASE_URL);
+  const base = env.client.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "");
+  const url = new URL(`${base}/${path.replace(/^\//, "")}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) url.searchParams.set(key, String(value));
+      if (value !== undefined && value !== null)
+        url.searchParams.set(key, String(value));
     });
   }
   return url.toString();
 }
 
-/**
- * Browser REST client. credentials: 'include' sends HTTP-only session cookies.
- */
 export async function httpClient<T>(
   path: string,
   options: RequestOptions = {},
@@ -50,15 +51,11 @@ export async function httpClient<T>(
     let errorBody: ApiErrorBody | null = null;
     try {
       errorBody = (await response.json()) as ApiErrorBody;
-    } catch {
-      /* empty */
-    }
+    } catch { /* empty */ }
     throw new ApiError(response.status, errorBody);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  if (response.status === 204) return undefined as T;
 
   return response.json() as Promise<T>;
 }

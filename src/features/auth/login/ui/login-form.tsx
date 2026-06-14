@@ -28,24 +28,22 @@ export function LoginForm() {
 
   const mutation = useMutation({
     mutationFn: loginApi.login,
-    onSuccess: (data, variables) => {
-      if (data.status === "2fa_required") {
-        dispatch(sessionActions.setPending2fa());
-        authPending.set(variables.email, data.challengeId);
-        const params = new URLSearchParams({
-          challenge: data.challengeId,
-          email: variables.email,
-        });
-        router.push(`/verify-2fa?${params.toString()}`);
-        return;
-      }
-      authPending.clear();
-      router.push("/");
+    onSuccess: (_data, variables) => {
+      dispatch(sessionActions.setPending2fa());
+      authPending.set(variables.email, "");
+      const params = new URLSearchParams({ email: variables.email });
+      router.push(`/verify-2fa?${params.toString()}`);
+    },
+    onError: () => {
+      form.setError("root", {
+        message: "Неверная почта или пароль. Проверьте данные и попробуйте снова.",
+      });
     },
   });
 
   const emailError = form.formState.errors.email?.message;
   const passwordError = form.formState.errors.password?.message;
+  const rootError = form.formState.errors.root?.message;
 
   return (
     <AuthScreen title="Вход">
@@ -93,9 +91,9 @@ export function LoginForm() {
           )}
         </div>
 
-        {mutation.isError && (
+        {rootError && (
           <p className="text-center text-sm text-destructive" role="alert">
-            Неверная почта или пароль. Проверьте данные и попробуйте снова.
+            {rootError}
           </p>
         )}
 

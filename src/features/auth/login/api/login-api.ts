@@ -1,10 +1,12 @@
 import { httpClient } from "@/shared/api/http-client";
 
-export type LoginResponse =
-  | { status: "authenticated" }
-  | { status: "2fa_required"; challengeId: string };
+/** Бэкенд всегда отправляет OTP на email и возвращает 200 */
+export type LoginResponse = {
+  message?: string;
+  detail?: string;
+};
 
 export const loginApi = {
   login: (body: { email: string; password: string }) =>
-    httpClient<LoginResponse>("/auth/login", { method: "POST", body }),
+    httpClient<LoginResponse>("/admin/auth/login", { method: "POST", body }),
 };

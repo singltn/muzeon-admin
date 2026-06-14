@@ -2,11 +2,11 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { logoutApi } from "../api/logout-api";
 import { sessionActions } from "@/store/slices/session-slice";
-import { permissionsActions } from "@/store/slices/permissions-slice";
 import { useAppDispatch } from "@/store/hooks";
-import { Button } from "@/shared/ui/button";
+import { clearSessionMarker } from "@/shared/lib/session-marker";
 
 export function LogoutButton() {
   const dispatch = useAppDispatch();
@@ -16,16 +16,21 @@ export function LogoutButton() {
   const mutation = useMutation({
     mutationFn: logoutApi.logout,
     onSettled: () => {
+      clearSessionMarker();
       dispatch(sessionActions.clearSession());
-      dispatch(permissionsActions.clearPermissions());
       queryClient.clear();
       router.push("/login");
     },
   });
 
   return (
-    <Button variant="ghost" size="sm" onClick={() => mutation.mutate()}>
+    <button
+      onClick={() => mutation.mutate()}
+      disabled={mutation.isPending}
+      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+    >
+      <LogOut className="h-4 w-4" />
       Выйти
-    </Button>
+    </button>
   );
 }

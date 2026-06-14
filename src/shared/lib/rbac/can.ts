@@ -1,22 +1,6 @@
-import type { Permission, RbacContext } from "./types";
+import type { UserRole } from "./types";
 
-export function can(
-  ctx: RbacContext,
-  permission: Permission,
-): boolean {
-  return ctx.permissions.includes(permission);
-}
-
-export function canAny(
-  ctx: RbacContext,
-  permissions: Permission[],
-): boolean {
-  return permissions.some((p) => can(ctx, p));
-}
-
-export function canAll(
-  ctx: RbacContext,
-  permissions: Permission[],
-): boolean {
-  return permissions.every((p) => can(ctx, p));
+/** Проверяет, имеет ли роль доступ к набору разрешённых ролей */
+export function can(role: UserRole, allowedRoles: UserRole[]): boolean {
+  return allowedRoles.includes(role);
 }
