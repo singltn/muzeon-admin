@@ -46,7 +46,7 @@ export function Header() {
 
       <div className="hidden shrink-0 items-center gap-2 lg:flex">
         {user && (
-          <span className="max-w-[160px] truncate text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground">
             {getUserDisplayName(user)}
           </span>
         )}

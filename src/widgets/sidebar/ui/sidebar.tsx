@@ -150,6 +150,13 @@ function SidebarContent({
       </nav>
 
       <div className="border-t border-border p-2">
+        {/* Имя пользователя — только в мобильном drawer, над Профилем и Сессиями */}
+        {isMobileDrawer && user && (
+          <p className="mb-1 truncate px-3 py-1 text-xs font-semibold text-foreground">
+            {getUserDisplayName(user)}
+          </p>
+        )}
+
         {BOTTOM_ITEMS.filter(visible).map((item) => (
           <Link
             key={item.href}
@@ -163,15 +170,8 @@ function SidebarContent({
           </Link>
         ))}
 
-        {/* Блок пользователя — только в мобильном drawer */}
-        {isMobileDrawer && user && (
-          <div className="mt-2 border-t border-border pt-3">
-            <p className="mb-1 truncate px-3 text-xs font-medium text-muted-foreground">
-              {getUserDisplayName(user)}
-            </p>
-            <LogoutButton />
-          </div>
-        )}
+        {/* Выйти — только в мобильном drawer, после Сессий */}
+        {isMobileDrawer && <LogoutButton />}
       </div>
     </>
   );
