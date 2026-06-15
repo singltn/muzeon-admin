@@ -18,6 +18,8 @@ import { cn } from "@/shared/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { uiActions } from "@/store/slices/ui-slice";
 import type { UserRole } from "@/shared/lib/rbac/types";
+import { LogoutButton } from "@/features/auth/logout/ui/logout-button";
+import { getUserDisplayName } from "@/entities/user/model/types";
 
 type NavItem = {
   href: string;
@@ -95,6 +97,8 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const role = useAppSelector((s) => s.session.role);
+  const user = useAppSelector((s) => s.session.user);
+  const isMobileDrawer = !!onClose;
 
   const visible = (item: NavItem) => (role ? item.roles.includes(role) : false);
 
@@ -158,6 +162,16 @@ function SidebarContent({
             {(!collapsed || onClose) && <span>{item.label}</span>}
           </Link>
         ))}
+
+        {/* Блок пользователя — только в мобильном drawer */}
+        {isMobileDrawer && user && (
+          <div className="mt-2 border-t border-border pt-3">
+            <p className="mb-1 truncate px-3 text-xs font-medium text-muted-foreground">
+              {getUserDisplayName(user)}
+            </p>
+            <LogoutButton />
+          </div>
+        )}
       </div>
     </>
   );

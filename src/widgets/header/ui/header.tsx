@@ -11,15 +11,17 @@ export function Header() {
   const user = useAppSelector((s) => s.session.user);
   const role = useAppSelector((s) => s.session.role);
 
-  const museumName =
-    role === "super_admin" ? "Платформа MUZEON" : (user?.museum?.name ?? "");
+  const contextLabel =
+    role === "super_admin"
+      ? "Платформа MUZEON"
+      : (user?.museum?.name ?? null);
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Mobile hamburger */}
         <button
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
           onClick={() => dispatch(uiActions.toggleMobileSidebar())}
           aria-label="Меню"
         >
@@ -28,23 +30,23 @@ export function Header() {
 
         {/* Desktop collapse */}
         <button
-          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
+          className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
           onClick={() => dispatch(uiActions.toggleSidebar())}
           aria-label="Свернуть меню"
         >
           <PanelLeft className="h-4 w-4" />
         </button>
 
-        {museumName && (
-          <span className="hidden text-sm font-medium text-muted-foreground sm:block">
-            {museumName}
+        {contextLabel && (
+          <span className="truncate text-sm font-semibold text-foreground">
+            {contextLabel}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="hidden shrink-0 items-center gap-2 lg:flex">
         {user && (
-          <span className="hidden text-sm text-muted-foreground md:block">
+          <span className="max-w-[160px] truncate text-sm text-muted-foreground">
             {getUserDisplayName(user)}
           </span>
         )}
