@@ -135,9 +135,9 @@ function SuperAdminDashboard({ data }: { data: SuperAdminDashboardResponse }) {
     <div className="space-y-6">
       {/* Stat row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Музеев" value={totalMuseums} icon={Building2} accent="blue" />
+        <StatCard label="Количество музеев" value={totalMuseums} icon={Building2} accent="blue" />
         <StatCard
-          label="Подписки"
+          label="Количество подписок"
           value={totalSubscriptions}
           icon={CheckCircle2}
           accent="green"
