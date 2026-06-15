@@ -149,7 +149,7 @@ function SuperAdminDashboard({ data }: { data: SuperAdminDashboardResponse }) {
           accent={problemCount > 0 ? "red" : "green"}
         />
         <StatCard
-          label="Истекает скоро"
+          label="Истекает подписка"
           value={expiringCount}
           icon={Clock}
           accent={expiringCount > 0 ? "yellow" : "green"}
