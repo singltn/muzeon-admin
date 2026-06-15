@@ -1,49 +1,26 @@
-export type UserRole =
-  | "super_admin"
-  | "museum_admin"
-  | "content"
-  | "marketer"
-  | "analyst";
+export type UserRole = "super_admin" | "museum_admin" | "museum_stuff";
 
-/** EventReader роли */
-export const EVENT_READER_ROLES: UserRole[] = [
-  "super_admin",
-  "museum_admin",
-  "content",
-  "marketer",
-  "analyst",
-];
+export const ALL_ROLES: UserRole[] = ["super_admin", "museum_admin", "museum_stuff"];
 
-/** EventManager роли */
-export const EVENT_MANAGER_ROLES: UserRole[] = [
-  "super_admin",
-  "museum_admin",
-  "content",
-];
-
+/** Может управлять событиями и площадками */
 export function isEventManager(role: UserRole): boolean {
-  return EVENT_MANAGER_ROLES.includes(role);
-}
-
-export function isEventReader(role: UserRole): boolean {
-  return EVENT_READER_ROLES.includes(role);
+  return role === "museum_admin" || role === "museum_stuff";
 }
 
 export function isSuperAdmin(role: UserRole): boolean {
   return role === "super_admin";
 }
 
-export function isMuseumAdmin(role: UserRole): boolean {
-  return role === "museum_admin";
+export function isMuseumAdmin(r: UserRole): boolean {
+  return r === "museum_admin";
 }
 
 export function getDefaultRoute(role: UserRole): string {
-  switch (role) {
-    case "super_admin":
-      return "/museums";
-    case "museum_admin":
-      return "/museum";
-    default:
-      return "/events";
-  }
+  return "/dashboard";
 }
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  super_admin: "Super Admin",
+  museum_admin: "Администратор музея",
+  museum_stuff: "Сотрудник музея",
+};

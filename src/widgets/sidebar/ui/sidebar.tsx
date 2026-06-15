@@ -6,6 +6,7 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
+  Home,
   MapPin,
   Settings,
   Tag,
@@ -26,32 +27,80 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/museums",     label: "Музеи",        icon: Building2,  roles: ["super_admin"] },
-  { href: "/event-types", label: "Типы событий", icon: Tag,        roles: ["super_admin"] },
-  { href: "/museum",      label: "Мой музей",    icon: Building2,  roles: ["museum_admin"] },
-  { href: "/users",       label: "Пользователи", icon: Users,      roles: ["museum_admin"] },
-  { href: "/events",      label: "События",      icon: CalendarDays, roles: ["museum_admin", "content", "marketer", "analyst"] },
-  { href: "/locations",   label: "Площадки",     icon: MapPin,     roles: ["museum_admin", "content", "marketer", "analyst"] },
+  {
+    href: "/dashboard",
+    label: "Главная",
+    icon: Home,
+    roles: ["super_admin", "museum_admin", "museum_stuff"],
+  },
+  {
+    href: "/museums",
+    label: "Музеи",
+    icon: Building2,
+    roles: ["super_admin"],
+  },
+  {
+    href: "/event-types",
+    label: "Типы событий",
+    icon: Tag,
+    roles: ["super_admin"],
+  },
+  {
+    href: "/museum",
+    label: "Мой музей",
+    icon: Building2,
+    roles: ["museum_admin"],
+  },
+  {
+    href: "/users",
+    label: "Пользователи",
+    icon: Users,
+    roles: ["museum_admin"],
+  },
+  {
+    href: "/events",
+    label: "События",
+    icon: CalendarDays,
+    roles: ["museum_admin", "museum_stuff"],
+  },
+  {
+    href: "/locations",
+    label: "Площадки",
+    icon: MapPin,
+    roles: ["museum_admin", "museum_stuff"],
+  },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { href: "/profile",  label: "Профиль", icon: Settings, roles: ["super_admin", "museum_admin", "content", "marketer", "analyst"] },
-  { href: "/sessions", label: "Сессии",  icon: BarChart3, roles: ["super_admin", "museum_admin", "content", "marketer", "analyst"] },
+  {
+    href: "/profile",
+    label: "Профиль",
+    icon: Settings,
+    roles: ["super_admin", "museum_admin", "museum_stuff"],
+  },
+  {
+    href: "/sessions",
+    label: "Сессии",
+    icon: BarChart3,
+    roles: ["super_admin", "museum_admin", "museum_stuff"],
+  },
 ];
 
-type SidebarContentProps = {
+function SidebarContent({
+  collapsed,
+  onClose,
+}: {
   collapsed: boolean;
   onClose?: () => void;
-};
-
-function SidebarContent({ collapsed, onClose }: SidebarContentProps) {
+}) {
   const pathname = usePathname();
   const role = useAppSelector((s) => s.session.role);
 
   const visible = (item: NavItem) => (role ? item.roles.includes(role) : false);
 
   const linkCls = (href: string) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    const isActive =
+      pathname === href || (href !== "/" && pathname.startsWith(href));
     return cn(
       "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
       isActive
@@ -72,7 +121,10 @@ function SidebarContent({ collapsed, onClose }: SidebarContentProps) {
           )}
         </div>
         {onClose && (
-          <button onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-muted">
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground hover:bg-muted"
+          >
             <X className="h-4 w-4" />
           </button>
         )}
@@ -80,7 +132,13 @@ function SidebarContent({ collapsed, onClose }: SidebarContentProps) {
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         {NAV_ITEMS.filter(visible).map((item) => (
-          <Link key={item.href} href={item.href} onClick={onClose} className={linkCls(item.href)} title={collapsed && !onClose ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            className={linkCls(item.href)}
+            title={collapsed && !onClose ? item.label : undefined}
+          >
             <item.icon className="h-4 w-4 shrink-0" />
             {(!collapsed || onClose) && <span>{item.label}</span>}
           </Link>
@@ -89,7 +147,13 @@ function SidebarContent({ collapsed, onClose }: SidebarContentProps) {
 
       <div className="border-t border-border p-2">
         {BOTTOM_ITEMS.filter(visible).map((item) => (
-          <Link key={item.href} href={item.href} onClick={onClose} className={linkCls(item.href)} title={collapsed && !onClose ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            className={linkCls(item.href)}
+            title={collapsed && !onClose ? item.label : undefined}
+          >
             <item.icon className="h-4 w-4 shrink-0" />
             {(!collapsed || onClose) && <span>{item.label}</span>}
           </Link>
@@ -105,7 +169,6 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-background transition-all duration-200 lg:flex",
@@ -115,7 +178,6 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         <SidebarContent collapsed={collapsed} />
       </aside>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
@@ -123,7 +185,6 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         />
       )}
 
-      {/* Mobile drawer */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-background transition-transform duration-200 lg:hidden",

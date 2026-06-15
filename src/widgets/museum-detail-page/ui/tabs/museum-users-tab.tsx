@@ -28,13 +28,12 @@ import {
 } from "@/entities/user/model/schemas";
 import type { User } from "@/entities/user/model/types";
 import { toastApiError, toastSuccess } from "@/shared/lib/toast";
+import { ROLE_LABELS } from "@/shared/lib/rbac/types";
 
 const ROLE_OPTIONS = [
-  { value: "museum_admin", label: "Администратор музея" },
-  { value: "content", label: "Контент-менеджер" },
-  { value: "marketer", label: "Маркетолог" },
-  { value: "analyst", label: "Аналитик" },
-];
+  { value: "museum_admin", label: ROLE_LABELS.museum_admin },
+  { value: "museum_stuff", label: ROLE_LABELS.museum_stuff },
+] as const;
 
 export function MuseumUsersTab({ museumId }: { museumId: number }) {
   const queryClient = useQueryClient();
@@ -44,7 +43,10 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: userQueryKeys.list(museumId, { offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
+    queryKey: userQueryKeys.list(museumId, {
+      offset: page * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    }),
     queryFn: () =>
       userApi.list(museumId, { offset: page * PAGE_SIZE, limit: PAGE_SIZE }),
   });
@@ -83,10 +85,9 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
     {
       accessorKey: "role",
       header: "Роль",
-      cell: (info) => {
-        const r = ROLE_OPTIONS.find((o) => o.value === info.getValue());
-        return r?.label ?? String(info.getValue());
-      },
+      cell: (info) =>
+        ROLE_LABELS[info.getValue() as keyof typeof ROLE_LABELS] ??
+        String(info.getValue()),
     },
     {
       accessorKey: "is_active",
@@ -98,10 +99,18 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
       header: "",
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditUser(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditUser(row.original)}
+          >
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDeleteUser(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteUser(row.original)}
+          >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -132,6 +141,7 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
         onOpenChange={setCreateOpen}
         onSubmit={createMutation.mutate}
         isPending={createMutation.isPending}
+        roleOptions={ROLE_OPTIONS}
       />
 
       {editUser && (
@@ -140,6 +150,7 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
           onOpenChange={() => setEditUser(null)}
           user={editUser}
           museumId={museumId}
+          roleOptions={ROLE_OPTIONS}
         />
       )}
 
@@ -147,7 +158,7 @@ export function MuseumUsersTab({ museumId }: { museumId: number }) {
         open={!!deleteUser}
         onOpenChange={(v) => !v && setDeleteUser(null)}
         title="Удалить пользователя"
-        description={`Вы уверены, что хотите удалить ${deleteUser?.email}?`}
+        description={`Удалить ${deleteUser?.email}?`}
         onConfirm={() => deleteUser && deleteMutation.mutate(deleteUser.id)}
         isPending={deleteMutation.isPending}
       />
@@ -160,15 +171,19 @@ function UserCreateModal({
   onOpenChange,
   onSubmit,
   isPending,
+  roleOptions,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSubmit: (d: UserCreateFormData) => void;
   isPending: boolean;
+  roleOptions: readonly { value: string; label: string }[];
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<UserCreateFormData>({
-    resolver: zodResolver(userCreateSchema),
-  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UserCreateFormData>({ resolver: zodResolver(userCreateSchema) });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,7 +209,7 @@ function UserCreateModal({
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">— выберите роль —</option>
-              {ROLE_OPTIONS.map((o) => (
+              {roleOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -205,7 +220,11 @@ function UserCreateModal({
             Пароль будет автоматически отправлен на email
           </p>
           <div className="flex justify-end gap-3 pt-1">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Отмена
             </Button>
             <Button type="submit" disabled={isPending}>
@@ -223,14 +242,20 @@ function UserEditModal({
   onOpenChange,
   user,
   museumId,
+  roleOptions,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   user: User;
   museumId: number;
+  roleOptions: readonly { value: string; label: string }[];
 }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { errors } } = useForm<UserUpdateFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UserUpdateFormData>({
     resolver: zodResolver(userUpdateSchema),
     defaultValues: {
       first_name: user.first_name,
@@ -241,7 +266,8 @@ function UserEditModal({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (d: UserUpdateFormData) => userApi.update(museumId, user.id, d),
+    mutationFn: (d: UserUpdateFormData) =>
+      userApi.update(museumId, user.id, d),
     onSuccess: () => {
       toastSuccess("Пользователь обновлён");
       queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
@@ -256,13 +282,22 @@ function UserEditModal({
         <DialogHeader>
           <DialogTitle>Редактировать пользователя</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit((d) => updateMutation.mutate(d))} className="space-y-4">
+        <form
+          onSubmit={handleSubmit((d) => updateMutation.mutate(d))}
+          className="space-y-4"
+        >
           <div className="grid grid-cols-2 gap-3">
             <Field label="Имя" error={errors.first_name?.message}>
-              <Input {...register("first_name")} aria-invalid={!!errors.first_name} />
+              <Input
+                {...register("first_name")}
+                aria-invalid={!!errors.first_name}
+              />
             </Field>
             <Field label="Фамилия" error={errors.last_name?.message}>
-              <Input {...register("last_name")} aria-invalid={!!errors.last_name} />
+              <Input
+                {...register("last_name")}
+                aria-invalid={!!errors.last_name}
+              />
             </Field>
           </div>
           <Field label="Роль" error={errors.role?.message}>
@@ -270,19 +305,30 @@ function UserEditModal({
               {...register("role")}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              {ROLE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {roleOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </Field>
-          <Field label="Активен">
+          <Field label="Статус">
             <div className="flex items-center gap-2">
-              <input type="checkbox" {...register("is_active")} id="is_active" className="h-4 w-4" />
+              <input
+                type="checkbox"
+                {...register("is_active")}
+                id="is_active"
+                className="h-4 w-4"
+              />
               <Label htmlFor="is_active">Учётная запись активна</Label>
             </div>
           </Field>
           <div className="flex justify-end gap-3 pt-1">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Отмена
             </Button>
             <Button type="submit" disabled={updateMutation.isPending}>
